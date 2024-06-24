@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Calorie Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .form-container, .list-container {
+      width: 80%;
+      margin: 10px 0;
+    }
+    .form-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .list-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    input, button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    .meal {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+    .meal button {
+      margin: 0 5px;
+    }
+    .liked {
+      background-color: #90ee90;
+    }
+    .disliked {
+      background-color: #ffcccb;
+    }
+  </style>
+  <!-- Import Firebase libraries from CDN -->
+  <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Calorie Tracker</h1>
+    <div class="form-container">
+      <h2>Log Calorie Intake</h2>
+      <input type="text" id="meal" placeholder="Meal" required>
+      <input type="number" id="calories" placeholder="Calories" required>
+      <button id="addEntry">Add Entry</button>
+    </div>
+    <div class="list-container">
+      <h2>Historical Data</h2>
+      <div id="mealsContainer"></div>
+      <button id="deleteAll">Delete All</button>
+    </div>
+  </div>
+
+  <script>
+    // Configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCWDf2lk2ctWsMQKztisYivOcsXALYZ3r0",
+      authDomain: "examen-extraordinaria-ae715.firebaseapp.com",
+      projectId: "examen-extraordinaria-ae715",
+      storageBucket: "examen-extraordinaria-ae715.appspot.com",
+      messagingSenderId: "586478769351",
+      appId: "1:586478769351:web:4696d6c75b86f910a49ae2"
+    };
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Función para añadir comida
+    function addMeal(meal, calories) {
+      db.collection("meals").add({
+        meal: meal,
+        calories: calories,
+        liked: null
+      })
+      .then((docRef) => {
+        console.log("Document written with ID: ", docRef.id);
+        getMeals();  // Actualizar lista de comidas
+      })
+      .catch((error) => {
+        console.error("Error adding document: ", error);
+      });
+    }
+
+    // Función para obtener y mostrar comidas
+    function getMeals() {
+      db.collection("meals").get().then((querySnapshot) => {
+        const mealsContainer = document.getElementById("mealsContainer");
+        mealsContainer.innerHTML = "";
+        querySnapshot.forEach((doc) => {
+          const meal = doc.data();
+          const mealDiv = document.createElement("div");
+          mealDiv.className = "meal";
+          mealDiv.innerHTML = `
+            <span>${meal.meal} - ${meal.calories} calories</span>
+            <div>
+              <button class="${meal.liked === true ? 'liked' : ''}" onclick="likeMeal('${doc.id}')">Like</button>
+              <button class="${meal.liked === false ? 'disliked' : ''}" onclick="dislikeMeal('${doc.id}')">Dislike</button>
+              <button onclick="deleteMeal('${doc.id}')">Delete</button>
+            </div>
+          `;
+          mealsContainer.appendChild(mealDiv);
+        });
+      });
+    }
+
+    // Función para eliminar comida
+    function deleteMeal(id) {
+      db.collection("meals").doc(id).delete().then(() => {
+        console.log("Document successfully deleted!");
+        getMeals();  // Actualizar lista de comidas
+      }).catch((error) => {
+        console.error("Error removing document: ", error);
+      });
+    }
+
+    // Función para eliminar todas las comidas
+    function deleteAllMeals() {
+      db.collection("meals").get().then((querySnapshot) => {
+        querySnapshot.forEach((doc) => {
+          db.collection("meals").doc(doc.id).delete();
+        });
+        getMeals();  // Actualizar lista de comidas
+      }).catch((error) => {
+        console.error("Error removing all documents: ", error);
+      });
+    }
+
+    // Función para marcar como me gusta
+    function likeMeal(id) {
+      db.collection("meals").doc(id).update({
+        liked: true
+      })
+      .then(() => {
+        console.log("Document successfully updated!");
+        getMeals();  // Actualizar lista de comidas
+      })
+      .catch((error) => {
+        console.error("Error updating document: ", error);
+      });
+    }
+
+    // Función para marcar como no me gusta
+    function dislikeMeal(id) {
+      db.collection("meals").doc(id).update({
+        liked: false
+      })
+      .then(() => {
+        console.log("Document successfully updated!");
+        getMeals();  // Actualizar lista de comidas
+      })
+      .catch((error) => {
+        console.error("Error updating document: ", error);
+      });
+    }
+
+    // Manejar el envío del formulario
+    document.getElementById("addEntry").addEventListener("click", function(event) {
+      let meal = document.getElementById("meal").value;
+      let calories = document.getElementById("calories").value;
+      if(meal && calories) {
+        addMeal(meal, calories);
+      } else {
+        alert("Todos los campos son obligatorios.");
+      }
+    });
+
+    // Manejar la eliminación de todas las comidas
+    document.getElementById("deleteAll").addEventListener("click", function() {
+      deleteAllMeals();
+    });
+
+    // Obtener y mostrar comidas al cargar la página
+    window.onload = getMeals;
+  </script>
+</body>
+</html>
